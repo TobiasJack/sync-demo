@@ -42,8 +42,8 @@ public class OracleQueueListener : IOracleQueueListener
                 }
                 else
                 {
-                    // No message, wait briefly
-                    await Task.Delay(100, cancellationToken);
+                    // No message, wait longer to reduce CPU usage
+                    await Task.Delay(500, cancellationToken);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

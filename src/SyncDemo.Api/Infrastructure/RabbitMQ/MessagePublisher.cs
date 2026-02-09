@@ -5,11 +5,12 @@ using SyncDemo.Shared.Models;
 
 namespace SyncDemo.Api.Infrastructure.RabbitMQ;
 
-public class MessagePublisher : IMessagePublisher
+public class MessagePublisher : IMessagePublisher, IDisposable
 {
     private readonly IConnection? _connection;
     private readonly IModel? _channel;
     private readonly ILogger<MessagePublisher> _logger;
+    private bool _disposed;
 
     public MessagePublisher(string hostName, int port, string userName, string password, ILogger<MessagePublisher> logger)
     {
@@ -78,5 +79,25 @@ public class MessagePublisher : IMessagePublisher
         }
 
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        try
+        {
+            _channel?.Close();
+            _channel?.Dispose();
+            _connection?.Close();
+            _connection?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disposing MessagePublisher");
+        }
+
+        _disposed = true;
     }
 }

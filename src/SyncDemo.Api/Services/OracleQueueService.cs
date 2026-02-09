@@ -58,6 +58,18 @@ public class OracleQueueService : BackgroundService
     {
         try
         {
+            await ProcessMessageAsync(message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error in Oracle AQ message event handler");
+        }
+    }
+
+    private async Task ProcessMessageAsync(OracleQueueMessage message)
+    {
+        try
+        {
             using var scope = _serviceProvider.CreateScope();
             
             var messagePublisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
