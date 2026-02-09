@@ -1,8 +1,11 @@
 using System.Net.Http;
 using Microsoft.AspNetCore.SignalR.Client;
 using SyncDemo.Shared.Models;
+using SyncDemo.Shared.DTOs;
 using SyncDemo.WpfApp.Models;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 
 namespace SyncDemo.WpfApp.Services;
 
@@ -14,7 +17,7 @@ public class DataUpdatedEventArgs : EventArgs
 
 public interface ISyncService
 {
-  Task ConnectAsync(string deviceId);
+  Task ConnectAsync(string deviceId, string username);
   Task DisconnectAsync();
   bool IsConnected { get; }
   event EventHandler<DataUpdatedEventArgs>? DataUpdated;
@@ -38,12 +41,15 @@ public class SyncService : ISyncService
     _httpClientFactory = httpClientFactory;
   }
 
-  public async Task ConnectAsync(string deviceId)
+  public async Task ConnectAsync(string deviceId, string username)
   {
     _deviceId = deviceId;
 
     if (_hubConnection != null && _hubConnection.State == HubConnectionState.Connected)
       return;
+
+    // First, register the device
+    await RegisterDeviceAsync(deviceId, username);
 
     _hubConnection = new HubConnectionBuilder()
         .WithUrl(_hubUrl)
@@ -103,8 +109,8 @@ public class SyncService : ISyncService
       var lastSyncTime = DateTime.UtcNow.AddDays(-30);
 
       var timestring = $"{lastSyncTime:O}";
-      // Fetch updates from server
-      var response = await httpClient.GetAsync($"/api/syncitems/sync?since={timestring}");
+      // Fetch updates from server with device ID for permission filtering
+      var response = await httpClient.GetAsync($"/api/syncitems/sync?since={timestring}&deviceId={_deviceId}");
       
       if (!response.IsSuccessStatusCode)
       {
@@ -180,6 +186,54 @@ public class SyncService : ISyncService
     catch (Exception ex)
     {
       System.Diagnostics.Debug.WriteLine($"Handle sync update error: {ex.Message}");
+    }
+  }
+
+  private async Task RegisterDeviceAsync(string deviceId, string username)
+  {
+    try
+    {
+      var httpClient = _httpClientFactory.CreateClient();
+      httpClient.BaseAddress = new Uri(_apiBaseUrl);
+
+      var registrationRequest = new DeviceRegistrationRequest
+      {
+        DeviceId = deviceId,
+        DeviceName = Environment.MachineName,
+        DeviceType = "WPF",
+        Username = username
+      };
+
+      var json = JsonSerializer.Serialize(registrationRequest);
+      var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+      var response = await httpClient.PostAsync("/api/device/register", content);
+
+      if (!response.IsSuccessStatusCode)
+      {
+        System.Diagnostics.Debug.WriteLine("Failed to register device");
+        throw new Exception("Device registration failed");
+      }
+
+      var registrationResponse = await response.Content.ReadFromJsonAsync<DeviceRegistrationResponse>();
+
+      if (registrationResponse != null && registrationResponse.Success)
+      {
+        System.Diagnostics.Debug.WriteLine($"Device registered with {registrationResponse.Permissions.Count} permissions");
+        foreach (var perm in registrationResponse.Permissions)
+        {
+          System.Diagnostics.Debug.WriteLine($"  - {perm.EntityType} ({perm.PermissionType})");
+        }
+      }
+      else
+      {
+        throw new Exception(registrationResponse?.Message ?? "Device registration failed");
+      }
+    }
+    catch (Exception ex)
+    {
+      System.Diagnostics.Debug.WriteLine($"Device registration error: {ex.Message}");
+      throw;
     }
   }
 }

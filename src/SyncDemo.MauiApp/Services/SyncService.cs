@@ -1,13 +1,17 @@
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using SyncDemo.MauiApp.Data;
 using SyncDemo.MauiApp.Models;
 using SyncDemo.Shared.Models;
+using SyncDemo.Shared.DTOs;
 
 namespace SyncDemo.MauiApp.Services;
 
 public interface ISyncService
 {
-    Task<SyncResult> SyncWithServerAsync();
+    Task<bool> RegisterDeviceAsync(string deviceId, string username);
+    Task<SyncResult> SyncWithServerAsync(string deviceId);
     Task<bool> CreateItemAsync(RealmSyncItem item);
     Task<bool> UpdateItemAsync(RealmSyncItem item);
     Task<bool> DeleteItemAsync(string id);
@@ -27,15 +31,55 @@ public class SyncService : ISyncService
         _httpClient = new HttpClient { BaseAddress = new Uri(_apiBaseUrl) };
     }
 
-    public async Task<SyncResult> SyncWithServerAsync()
+    public async Task<bool> RegisterDeviceAsync(string deviceId, string username)
+    {
+        try
+        {
+            var registrationRequest = new DeviceRegistrationRequest
+            {
+                DeviceId = deviceId,
+                DeviceName = DeviceInfo.Name,
+                DeviceType = "MAUI",
+                Username = username
+            };
+
+            var json = JsonSerializer.Serialize(registrationRequest);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/device/register", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to register device");
+                return false;
+            }
+
+            var registrationResponse = await response.Content.ReadFromJsonAsync<DeviceRegistrationResponse>();
+
+            if (registrationResponse != null && registrationResponse.Success)
+            {
+                System.Diagnostics.Debug.WriteLine($"Device registered with {registrationResponse.Permissions.Count} permissions");
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Device registration error: {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<SyncResult> SyncWithServerAsync(string deviceId)
     {
         try
         {
             // Get the last sync time (simplified - in production, store this)
             var lastSyncTime = DateTime.UtcNow.AddDays(-30);
 
-            // Fetch updates from server
-            var response = await _httpClient.GetAsync($"/syncitems/sync?since={lastSyncTime:O}");
+            // Fetch updates from server with device ID for permission filtering
+            var response = await _httpClient.GetAsync($"/syncitems/sync?since={lastSyncTime:O}&deviceId={deviceId}");
             
             if (!response.IsSuccessStatusCode)
             {
