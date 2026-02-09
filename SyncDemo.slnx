@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SyncDemo.Api/SyncDemo.Api.csproj" />
+    <Project Path="src/SyncDemo.Shared/SyncDemo.Shared.csproj" />
+  </Folder>
+</Solution>

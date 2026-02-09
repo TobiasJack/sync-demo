@@ -1,0 +1,58 @@
+using SyncDemo.Api.Data;
+using SyncDemo.Api.Hubs;
+using SyncDemo.Api.Services;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Add SignalR
+builder.Services.AddSignalR();
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// Register Oracle connection factory
+var oracleConnectionString = builder.Configuration.GetConnectionString("OracleConnection") 
+    ?? "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass;";
+builder.Services.AddSingleton<IDbConnectionFactory>(new OracleConnectionFactory(oracleConnectionString));
+
+// Register repository
+builder.Services.AddScoped<ISyncItemRepository, SyncItemRepository>();
+
+// Register RabbitMQ service
+var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+var rabbitMqPort = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672");
+var rabbitMqUser = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
+var rabbitMqPassword = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+builder.Services.AddSingleton<IMessageQueueService>(
+    new RabbitMqService(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword));
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseCors("AllowAll");
+app.UseHttpsRedirection();
+app.UseAuthorization();
+
+app.MapControllers();
+app.MapHub<SyncHub>("/synchub");
+
+app.Run();

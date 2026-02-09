@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Oracle Database
+  oracle:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: syncdemo-oracle
+    environment:
+      ORACLE_PWD: OraclePwd123
+      ORACLE_CHARACTERSET: AL32UTF8
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./scripts/init-oracle.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "sqlplus -s sys/OraclePwd123@localhost:1521/XE as sysdba <<< 'SELECT 1 FROM DUAL;' || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: syncdemo-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ASP.NET Core Web API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: syncdemo-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__OracleConnection=Data Source=oracle:1521/XEPDB1;User Id=syncuser;Password=syncpass;
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+    ports:
+      - "5000:80"
+    depends_on:
+      oracle:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  oracle-data:
+  rabbitmq-data:
