@@ -3,7 +3,7 @@ using SyncDemo.WpfApp.Models;
 
 namespace SyncDemo.WpfApp.Services;
 
-public interface IRealmService
+public interface IRealmService : IDisposable
 {
     Task<IEnumerable<RealmSyncItem>> GetAllItemsAsync();
     RealmSyncItem? GetItemById(string id);
@@ -63,5 +63,10 @@ public class RealmService : IRealmService
     public Task<int> GetItemCountAsync()
     {
         return Task.FromResult(_realm.All<RealmSyncItem>().Count(i => !i.IsDeleted));
+    }
+
+    public void Dispose()
+    {
+        _realm?.Dispose();
     }
 }

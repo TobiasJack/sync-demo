@@ -22,8 +22,8 @@ public interface ISyncService
 public class SyncService : ISyncService
 {
     private readonly IRealmService _realmService;
+    private readonly IHttpClientFactory _httpClientFactory;
     private HubConnection? _hubConnection;
-    private readonly HttpClient _httpClient;
     private readonly string _hubUrl = "http://localhost:5000/synchub";
     private readonly string _apiBaseUrl = "http://localhost:5000/api";
     private string _deviceId = string.Empty;
@@ -31,10 +31,10 @@ public class SyncService : ISyncService
     public event EventHandler<DataUpdatedEventArgs>? DataUpdated;
     public bool IsConnected => _hubConnection?.State == HubConnectionState.Connected;
 
-    public SyncService(IRealmService realmService)
+    public SyncService(IRealmService realmService, IHttpClientFactory httpClientFactory)
     {
         _realmService = realmService;
-        _httpClient = new HttpClient { BaseAddress = new Uri(_apiBaseUrl) };
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task ConnectAsync(string deviceId)
@@ -95,11 +95,14 @@ public class SyncService : ISyncService
     {
         try
         {
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(_apiBaseUrl);
+
             // Get the last sync time (simplified - in production, store this)
             var lastSyncTime = DateTime.UtcNow.AddDays(-30);
 
             // Fetch updates from server
-            var response = await _httpClient.GetAsync($"/syncitems/sync?since={lastSyncTime:O}");
+            var response = await httpClient.GetAsync($"/syncitems/sync?since={lastSyncTime:O}");
             
             if (!response.IsSuccessStatusCode)
             {

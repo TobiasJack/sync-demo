@@ -4,7 +4,7 @@ using SyncDemo.WpfApp.Services;
 
 namespace SyncDemo.WpfApp.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly ISyncService _syncService;
 
@@ -52,5 +52,10 @@ public partial class MainViewModel : ObservableObject
     private void OnDataUpdated(object? sender, DataUpdatedEventArgs e)
     {
         StatusText = $"Update empfangen: {e.EntityType} ({e.Operation}) - {DateTime.Now:HH:mm:ss}";
+    }
+
+    public void Dispose()
+    {
+        _syncService.DataUpdated -= OnDataUpdated;
     }
 }

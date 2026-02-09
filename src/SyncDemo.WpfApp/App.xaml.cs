@@ -16,6 +16,9 @@ public partial class App : Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
+                // HttpClient
+                services.AddHttpClient();
+
                 // Services
                 services.AddSingleton<IRealmService, RealmService>();
                 services.AddSingleton<ISyncService, SyncService>();

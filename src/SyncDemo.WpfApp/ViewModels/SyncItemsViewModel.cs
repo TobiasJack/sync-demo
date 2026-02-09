@@ -6,7 +6,7 @@ using System.Windows;
 
 namespace SyncDemo.WpfApp.ViewModels;
 
-public partial class SyncItemsViewModel : ObservableObject
+public partial class SyncItemsViewModel : ObservableObject, IDisposable
 {
     private readonly IRealmService _realmService;
     private readonly ISyncService _syncService;
@@ -47,5 +47,10 @@ public partial class SyncItemsViewModel : ObservableObject
         {
             LoadItems();
         }
+    }
+
+    public void Dispose()
+    {
+        _syncService.DataUpdated -= OnDataUpdated;
     }
 }

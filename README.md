@@ -178,6 +178,8 @@ Der WPF Client bietet:
 
 **Hinweis:** Der WPF Client kann nur auf Windows gebaut und ausgeführt werden.
 
+**Weitere Informationen:** Siehe [WPF Client Dokumentation](docs/WPF_CLIENT.md)
+
 ## 🔧 Konfiguration
 
 ### API Configuration (appsettings.json)
