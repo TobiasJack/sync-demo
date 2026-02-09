@@ -1,72 +1,79 @@
 using Realms;
+using Realms.Exceptions;
+
 using SyncDemo.WpfApp.Models;
 
 namespace SyncDemo.WpfApp.Services;
 
 public interface IRealmService : IDisposable
 {
-    Task<IEnumerable<RealmSyncItem>> GetAllItemsAsync();
-    RealmSyncItem? GetItemById(string id);
-    Task<RealmSyncItem> AddOrUpdateItemAsync(RealmSyncItem item);
-    Task DeleteItemAsync(string id);
-    Task<int> GetItemCountAsync();
+  Task<IEnumerable<RealmSyncItem>> GetAllItemsAsync();
+  RealmSyncItem? GetItemById(string id);
+  Task<RealmSyncItem> AddOrUpdateItemAsync(RealmSyncItem item);
+  Task DeleteItemAsync(string id);
+  Task<int> GetItemCountAsync();
 }
 
 public class RealmService : IRealmService
 {
-    private readonly Realm _realm;
+  public RealmService()
+  {
+  }
 
-    public RealmService()
+  private Realm GetRealmInstance()
+  {
+    var config = new RealmConfiguration("syncdemo-wpf.realm")
     {
-        var config = new RealmConfiguration("syncdemo-wpf.realm")
-        {
-            SchemaVersion = 1
-        };
-        
-        _realm = Realm.GetInstance(config);
-    }
+      SchemaVersion = 1,
+      ShouldDeleteIfMigrationNeeded = true
+    };
 
-    public Task<IEnumerable<RealmSyncItem>> GetAllItemsAsync()
-    {
-        var items = _realm.All<RealmSyncItem>().Where(i => !i.IsDeleted).ToList();
-        return Task.FromResult<IEnumerable<RealmSyncItem>>(items);
-    }
+    return Realm.GetInstance(config);
+  }
 
-    public RealmSyncItem? GetItemById(string id)
-    {
-        return _realm.Find<RealmSyncItem>(id);
-    }
+  public Task<IEnumerable<RealmSyncItem>> GetAllItemsAsync()
+  {
+    var items = GetRealmInstance().All<RealmSyncItem>().Where(i => !i.IsDeleted).ToList().Select(x => x.Detach()).ToList();
+    return Task.FromResult<IEnumerable<RealmSyncItem>>(items);
+  }
 
-    public async Task<RealmSyncItem> AddOrUpdateItemAsync(RealmSyncItem item)
-    {
-        await _realm.WriteAsync(() =>
-        {
-            _realm.Add(item, update: true);
-        });
-        
-        return item;
-    }
+  public RealmSyncItem? GetItemById(string id)
+  {
+    return GetRealmInstance().Find<RealmSyncItem>(id);
+  }
 
-    public async Task DeleteItemAsync(string id)
-    {
-        await _realm.WriteAsync(() =>
-        {
-            var item = _realm.Find<RealmSyncItem>(id);
-            if (item != null)
-            {
-                item.IsDeleted = true;
-                item.ModifiedAt = DateTimeOffset.UtcNow;
-            }
-        });
-    }
+  public async Task<RealmSyncItem> AddOrUpdateItemAsync(RealmSyncItem item)
+  {
+    var realm = GetRealmInstance();
 
-    public Task<int> GetItemCountAsync()
+    await realm.WriteAsync(() =>
     {
-        return Task.FromResult(_realm.All<RealmSyncItem>().Count(i => !i.IsDeleted));
-    }
+      realm.Add(item, update: true);
+    });
 
-    public void Dispose()
+    return item;
+  }
+
+  public async Task DeleteItemAsync(string id)
+  {
+    var realm = GetRealmInstance();
+    await realm.WriteAsync(() =>
     {
-        _realm?.Dispose();
-    }
+      var item = realm.Find<RealmSyncItem>(id);
+      if (item != null)
+      {
+        item.IsDeleted = true;
+        item.ModifiedAt = DateTimeOffset.UtcNow;
+      }
+    });
+  }
+
+  public Task<int> GetItemCountAsync()
+  {
+    return Task.FromResult(GetRealmInstance().All<RealmSyncItem>().Count(i => !i.IsDeleted));
+  }
+
+  public void Dispose()
+  {
+  }
 }

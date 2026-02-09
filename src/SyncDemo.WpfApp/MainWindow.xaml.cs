@@ -1,8 +1,9 @@
+using System.Windows;
 using SyncDemo.WpfApp.ViewModels;
-
+  
 namespace SyncDemo.WpfApp;
 
-public partial class MainWindow : ModernWpf.Controls.Window
+public partial class MainWindow : Window
 {
     public MainWindow(MainViewModel viewModel, SyncItemsViewModel syncItemsViewModel)
     {

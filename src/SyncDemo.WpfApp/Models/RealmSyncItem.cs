@@ -2,7 +2,7 @@ using Realms;
 
 namespace SyncDemo.WpfApp.Models;
 
-public class RealmSyncItem : RealmObject
+public partial class RealmSyncItem : IRealmObject
 {
     [PrimaryKey]
     [MapTo("_id")]

@@ -1,6 +1,10 @@
+using Dapper;
 using SyncDemo.Api.Data;
 using SyncDemo.Api.Hubs;
 using SyncDemo.Api.Services;
+
+// Register custom Dapper type handler for Oracle GUID strings
+SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
 var builder = WebApplication.CreateBuilder(args);
 
