@@ -11,6 +11,7 @@ Dieses Projekt demonstriert eine produktionsreife Implementierung der bidirektio
 - ✅ **.NET MAUI** - Cross-Platform Mobile App (Android, iOS, Windows, macOS)
 - ✅ **WPF Desktop Client** - Windows Desktop Application
 - ✅ **Oracle Database** - Enterprise-Datenbank mit Dapper ORM
+- ✅ **Oracle Advanced Queuing (AQ)** - Event-Driven Messaging für Echtzeit-Synchronisation
 - ✅ **RabbitMQ** - Message Queue für asynchrone Kommunikation
 - ✅ **Realm.NET** - Lokale Mobile-Datenbank
 - ✅ **MVVM Pattern** - Mit CommunityToolkit.Mvvm
@@ -54,6 +55,93 @@ Dieses Projekt demonstriert eine produktionsreife Implementierung der bidirektio
      │ Database  │    │   Queue   │
      └───────────┘    └───────────┘
 ```
+
+## 🚀 Event-Driven Architecture mit Oracle Advanced Queuing
+
+### Neue Architektur (ab Version 2.0)
+
+Das System nutzt **Oracle Advanced Queuing (AQ)** für ereignis-gesteuerte Echtzeit-Synchronisation:
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│  API        │         │  Oracle DB   │         │  Clients    │
+│  Controller │         │              │         │             │
+└──────┬──────┘         └──────┬───────┘         └─────────────┘
+       │                       │                          
+       │ INSERT/UPDATE/DELETE  │                          
+       └──────────────────────►│                          
+                               │ Trigger                   
+                               │   ↓                       
+                               │ AQ Enqueue               
+                               │   ↓                       
+                        ┌──────▼───────┐                  
+                        │ Oracle AQ    │                  
+                        │ Queue        │                  
+                        └──────┬───────┘                  
+                               │ Event (Real-Time)                          
+                        ┌──────▼───────┐                  
+                        │ Queue        │                  
+                        │ Listener     │                  
+                        └──────┬───────┘                  
+                               │                          
+                     ┌─────────┴─────────┐               
+                     │                   │               
+              ┌──────▼───────┐   ┌──────▼───────┐       
+              │  SignalR     │   │  RabbitMQ    │       
+              │  (Online)    │   │  (Offline)   │       
+              └──────┬───────┘   └──────┬───────┘       
+                     │                   │               
+                     └─────────┬─────────┘               
+                               │                          
+                        ┌──────▼───────┐                  
+                        │   Clients    │                  
+                        └──────────────┘                  
+```
+
+### Vorteile der Event-Driven Architektur
+
+✅ **Echtzeit statt Polling** - Keine Verzögerung, sofortige Benachrichtigung  
+✅ **Geringere Datenbank-Last** - Keine ständigen SELECT-Queries mehr  
+✅ **Hochskalierbar** - Oracle AQ ist für High-Throughput optimiert  
+✅ **Transaktions-sicher** - AQ garantiert Delivery mit ACID-Eigenschaften  
+✅ **Enterprise-Grade** - Professionelle Messaging-Lösung von Oracle  
+✅ **Entkoppelt** - Controller kennen keine Clients, nur Datenbank-Operationen
+
+### Workflow
+
+1. **Controller** führt INSERT/UPDATE/DELETE auf `CUSTOMERS` oder `PRODUCTS` aus
+2. **Oracle Trigger** wird automatisch ausgeführt und:
+   - Schreibt Änderung in `SYNC_CHANGES` Tabelle (Audit)
+   - Erstellt JSON-Payload mit allen Daten
+   - Sendet Message an Oracle AQ Queue
+3. **OracleQueueListener** (Background Service) empfängt Message sofort
+4. **Permission Check** - Prüft welche Devices berechtigt sind
+5. **Verteilung**:
+   - **Online Devices**: Direktes Senden via SignalR (WebSocket)
+   - **Offline Devices**: Speichern in RabbitMQ Queue für späteren Abruf
+
+### Unterstützte Entitäten
+
+- ✅ **CUSTOMERS** - Kundendaten mit Real-Time Sync
+- ✅ **PRODUCTS** - Produktdaten mit Real-Time Sync
+- ✅ **SYNCITEMS** - Legacy-Unterstützung (via Polling)
+
+### Controller-Vereinfachung
+
+Die Controller sind extrem vereinfacht - sie enthalten **keine** SignalR- oder RabbitMQ-Logik mehr:
+
+```csharp
+[HttpPost]
+public async Task<ActionResult<int>> Create([FromBody] Customer customer)
+{
+    // Nur DB-Operation - Oracle Trigger + AQ übernehmen den Rest!
+    var id = await _repository.CreateAsync(customer);
+    
+    return CreatedAtAction(nameof(GetById), new { id }, id);
+}
+```
+
+Der gesamte Synchronisations-Workflow wird durch Oracle-Trigger und den OracleQueueService automatisch abgewickelt.
 
 ## 📂 Projektstruktur
 
@@ -264,6 +352,22 @@ App → REST API (GET /api/syncitems/sync?since={datetime})
 - `DELETE /api/syncitems/{id}` - Item löschen (soft delete)
 - `GET /api/syncitems/sync?since={datetime}` - Geänderte Items seit Zeitpunkt abrufen
 
+### Customers Controller (Event-Driven mit Oracle AQ)
+
+- `GET /api/customers` - Alle Kunden abrufen
+- `GET /api/customers/{id}` - Kunde nach ID abrufen
+- `POST /api/customers` - Neuen Kunden erstellen (Oracle Trigger + AQ)
+- `PUT /api/customers/{id}` - Kunde aktualisieren (Oracle Trigger + AQ)
+- `DELETE /api/customers/{id}` - Kunde löschen (Oracle Trigger + AQ)
+
+### Products Controller (Event-Driven mit Oracle AQ)
+
+- `GET /api/products` - Alle Produkte abrufen
+- `GET /api/products/{id}` - Produkt nach ID abrufen
+- `POST /api/products` - Neues Produkt erstellen (Oracle Trigger + AQ)
+- `PUT /api/products/{id}` - Produkt aktualisieren (Oracle Trigger + AQ)
+- `DELETE /api/products/{id}` - Produkt löschen (Oracle Trigger + AQ)
+
 ### SignalR Hub Events
 
 - `SendSyncUpdate(SyncMessage)` - Update an Server senden
@@ -287,6 +391,31 @@ curl -X POST http://localhost:5000/api/syncitems \
 
 # Sync abrufen
 curl "http://localhost:5000/api/syncitems/sync?since=2024-01-01T00:00:00Z"
+
+# Customer erstellen (Oracle AQ Event-Driven)
+curl -X POST http://localhost:5000/api/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Max Mustermann",
+    "email": "max@example.com",
+    "phone": "+49-123-456789"
+  }'
+
+# Alle Kunden abrufen
+curl http://localhost:5000/api/customers
+
+# Produkt erstellen (Oracle AQ Event-Driven)
+curl -X POST http://localhost:5000/api/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Premium Laptop",
+    "description": "High-End Workstation",
+    "price": 1999.99,
+    "stock": 5
+  }'
+
+# Alle Produkte abrufen
+curl http://localhost:5000/api/products
 ```
 
 ### RabbitMQ Management UI
