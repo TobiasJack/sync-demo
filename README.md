@@ -4,11 +4,12 @@ Demo-Projekt für bidirektionale Datensynchronisation zwischen .NET MAUI App und
 
 ## 🎯 Überblick
 
-Dieses Projekt demonstriert eine produktionsreife Implementierung der bidirektionalen Datensynchronisation zwischen einer mobilen App und einem Backend-API mit folgenden Technologien:
+Dieses Projekt demonstriert eine produktionsreife Implementierung der bidirektionalen Datensynchronisation zwischen mobilen und Desktop-Apps und einem Backend-API mit folgenden Technologien:
 
 - ✅ **.NET 8** - Moderne .NET-Plattform
 - ✅ **ASP.NET Core Web API** - RESTful API mit SignalR für Echtzeit-Kommunikation
 - ✅ **.NET MAUI** - Cross-Platform Mobile App (Android, iOS, Windows, macOS)
+- ✅ **WPF Desktop Client** - Windows Desktop Application
 - ✅ **Oracle Database** - Enterprise-Datenbank mit Dapper ORM
 - ✅ **RabbitMQ** - Message Queue für asynchrone Kommunikation
 - ✅ **Realm.NET** - Lokale Mobile-Datenbank
@@ -18,39 +19,40 @@ Dieses Projekt demonstriert eine produktionsreife Implementierung der bidirektio
 ## 🏗️ Architektur
 
 ```
-┌─────────────────────┐
-│   .NET MAUI App     │
-│   ┌─────────────┐   │
-│   │  Realm DB   │   │◄──┐
-│   └─────────────┘   │   │
-│   ┌─────────────┐   │   │ Real-time
-│   │  SignalR    │◄──┼───┤ Sync
-│   │  Client     │   │   │
-│   └─────────────┘   │   │
-└─────────────────────┘   │
-          │               │
-          │ HTTP/REST     │
-          ▼               │
-┌─────────────────────────┼───┐
-│   ASP.NET Core API      │   │
-│   ┌─────────────┐   ┌───▼──┐│
-│   │ Controllers │   │SignalR││
-│   └──────┬──────┘   │  Hub  ││
-│          │          └───────┘│
-│   ┌──────▼──────┐            │
-│   │ Repository  │            │
-│   └──────┬──────┘            │
-│          │                   │
-│   ┌──────▼──────┐  ┌────────┤
-│   │   Dapper    │  │RabbitMQ│
-│   └──────┬──────┘  │Service │
-│          │         └────┬───┘
-└──────────┼──────────────┼────┘
-           │              │
-     ┌─────▼─────┐  ┌─────▼─────┐
-     │  Oracle   │  │ RabbitMQ  │
-     │ Database  │  │   Queue   │
-     └───────────┘  └───────────┘
+┌─────────────────────┐  ┌─────────────────────┐
+│   .NET MAUI App     │  │    WPF Desktop      │
+│   ┌─────────────┐   │  │   ┌─────────────┐   │
+│   │  Realm DB   │   │◄─┼───┤  Realm DB   │   │
+│   └─────────────┘   │  │   └─────────────┘   │
+│   ┌─────────────┐   │  │   ┌─────────────┐   │ Real-time
+│   │  SignalR    │◄──┼──┼───┤  SignalR    │◄──┤ Sync
+│   │  Client     │   │  │   │  Client     │   │
+│   └─────────────┘   │  │   └─────────────┘   │
+└─────────────────────┘  └─────────────────────┘
+          │                        │
+          │        HTTP/REST       │
+          └───────────┬────────────┘
+                      ▼
+┌─────────────────────────────────────┐
+│       ASP.NET Core API              │
+│   ┌─────────────┐   ┌───────────┐  │
+│   │ Controllers │   │  SignalR  │  │
+│   └──────┬──────┘   │    Hub    │  │
+│          │          └─────▲─────┘  │
+│   ┌──────▼──────┐         │        │
+│   │ Repository  │         │        │
+│   └──────┬──────┘         │        │
+│          │                │        │
+│   ┌──────▼──────┐  ┌──────┴─────┐ │
+│   │   Dapper    │  │  RabbitMQ  │ │
+│   └──────┬──────┘  │  Service   │ │
+│          │         └──────┬─────┘ │
+└──────────┼────────────────┼───────┘
+           │                │
+     ┌─────▼─────┐    ┌─────▼─────┐
+     │  Oracle   │    │ RabbitMQ  │
+     │ Database  │    │   Queue   │
+     └───────────┘    └───────────┘
 ```
 
 ## 📂 Projektstruktur
@@ -71,6 +73,13 @@ sync-demo/
 │   │   ├── ViewModels/        # MVVM ViewModels
 │   │   ├── Views/             # XAML Views
 │   │   └── Resources/         # App Resources
+│   │
+│   ├── SyncDemo.WpfApp/       # WPF Desktop Client
+│   │   ├── Models/            # Realm Models
+│   │   ├── Services/          # Sync & SignalR Services
+│   │   ├── ViewModels/        # MVVM ViewModels
+│   │   ├── Views/             # XAML Views
+│   │   └── Converters/        # Value Converters
 │   │
 │   └── SyncDemo.Shared/       # Shared Models
 │       └── Models/            # DTOs & Shared Types
@@ -148,6 +157,26 @@ dotnet build -f net8.0-windows10.0.19041.0
 # Für macOS
 dotnet build -f net8.0-maccatalyst
 ```
+
+### 4. WPF Desktop Client starten (Alternative zur MAUI App)
+
+**Windows:**
+```bash
+cd src/SyncDemo.WpfApp
+dotnet restore
+dotnet run
+```
+
+Der WPF Client bietet:
+- ✅ Vollständige Desktop-Erfahrung für Windows
+- ✅ Gleiche Synchronisations-Features wie MAUI App
+- ✅ DataGrid-basierte Anzeige von Sync Items
+- ✅ Modern WPF UI Design
+- ✅ SignalR Echtzeit-Updates
+- ✅ Realm DB für lokale Datenspeicherung
+- ✅ Mehrere Instanzen parallel (verschiedene Device-IDs)
+
+**Hinweis:** Der WPF Client kann nur auf Windows gebaut und ausgeführt werden.
 
 ## 🔧 Konfiguration
 
