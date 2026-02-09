@@ -46,7 +46,7 @@ public class SyncService : ISyncService
             var json = JsonSerializer.Serialize(registrationRequest);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/device/register", content);
+            var response = await _httpClient.PostAsync("/api/device/register", content);
 
             if (!response.IsSuccessStatusCode)
             {
