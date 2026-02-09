@@ -22,6 +22,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = "Ready";
 
+    [ObservableProperty]
+    private string _deviceId = Guid.NewGuid().ToString();
+
+    [ObservableProperty]
+    private string _username = "user1";
+
+    [ObservableProperty]
+    private bool _isRegistered = false;
+
     public MainViewModel(IRealmService realmService, ISyncService syncService, ISignalRService signalRService)
     {
         _realmService = realmService;
@@ -63,6 +72,38 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task RegisterDeviceAsync()
+    {
+        if (IsBusy) return;
+
+        try
+        {
+            IsBusy = true;
+            StatusMessage = "Registering device...";
+
+            var success = await _syncService.RegisterDeviceAsync(DeviceId, Username);
+            
+            if (success)
+            {
+                IsRegistered = true;
+                StatusMessage = $"Device registered as {Username}";
+            }
+            else
+            {
+                StatusMessage = "Device registration failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Registration error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task SyncWithServerAsync()
     {
         if (IsBusy) return;
@@ -75,8 +116,8 @@ public partial class MainViewModel : ObservableObject
             // Connect to SignalR
             await _signalRService.StartAsync();
 
-            // Perform sync
-            var result = await _syncService.SyncWithServerAsync();
+            // Perform sync with device ID
+            var result = await _syncService.SyncWithServerAsync(DeviceId);
             
             if (result.Success)
             {

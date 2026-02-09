@@ -12,6 +12,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _deviceId = Guid.NewGuid().ToString();
 
     [ObservableProperty]
+    private string _username = "user1"; // Default username
+
+    [ObservableProperty]
     private bool _isConnected;
 
     [ObservableProperty]
@@ -30,10 +33,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
-            StatusText = "Verbinde...";
-            await _syncService.ConnectAsync(DeviceId);
+            StatusText = "Registriere Device...";
+            await _syncService.ConnectAsync(DeviceId, Username);
             IsConnected = true;
-            StatusText = $"Verbunden als {DeviceId}";
+            StatusText = $"Verbunden als {Username} (Device: {DeviceId})";
         }
         catch (Exception ex)
         {
