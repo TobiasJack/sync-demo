@@ -668,7 +668,7 @@ EXIT;
 Führe manuell als SYSTEM User aus:
 
 ```bash
-docker exec -it syncdemo-oracle sqlplus system/OraclePass123@XEPDB1
+docker exec -it syncdemo-oracle sqlplus system/OraclePwd123@XEPDB1
 
 GRANT EXECUTE ON DBMS_AQADM TO syncuser;
 GRANT EXECUTE ON DBMS_AQ TO syncuser;
