@@ -2,6 +2,8 @@ using Dapper;
 using SyncDemo.Api.Data;
 using SyncDemo.Api.Hubs;
 using SyncDemo.Api.Services;
+using SyncDemo.Api.Infrastructure.SignalR;
+using SyncDemo.Api.Infrastructure.RabbitMQ;
 
 // Register custom Dapper type handler for Oracle GUID strings
 SqlMapper.AddTypeHandler(new GuidTypeHandler());
@@ -37,11 +39,13 @@ builder.Services.AddScoped<ISyncItemRepository, SyncItemRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<IDevicePermissionRepository, DevicePermissionRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
 // Register services
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 
-// Register RabbitMQ service
+// Register RabbitMQ service (for existing SyncItems functionality)
 var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
 var rabbitMqPort = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672");
 var rabbitMqUser = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
@@ -51,6 +55,17 @@ builder.Services.AddSingleton<IMessageQueueService>(sp =>
     var logger = sp.GetRequiredService<ILogger<RabbitMqService>>();
     return new RabbitMqService(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword, logger);
 });
+
+// Register infrastructure services for Oracle AQ event-driven architecture
+builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
+builder.Services.AddSingleton<IMessagePublisher>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<MessagePublisher>>();
+    return new MessagePublisher(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword, logger);
+});
+
+// Register Oracle AQ background service (Event-Driven Architecture)
+builder.Services.AddHostedService<OracleQueueService>();
 
 var app = builder.Build();
 
