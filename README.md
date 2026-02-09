@@ -282,7 +282,7 @@ Der WPF Client bietet:
 ```json
 {
   "ConnectionStrings": {
-    "OracleConnection": "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass;"
+    "OracleConnection": "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass123;"
   },
   "RabbitMQ": {
     "Host": "localhost",

@@ -35,7 +35,7 @@ Expected services:
 Connect to Oracle and check the queue:
 
 ```bash
-docker exec -it syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1
 
 -- Check if queue is created and started
 SELECT queue_name, queue_table, enqueue_enabled, dequeue_enabled 
@@ -147,7 +147,7 @@ curl -X DELETE http://localhost:5000/api/products/1
 
 ```bash
 # Check database directly
-docker exec -it syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1
 
 -- Check customers
 SELECT * FROM CUSTOMERS;
@@ -164,7 +164,7 @@ exit;
 ### Test 6: Monitor Queue Messages
 
 ```bash
-docker exec -it syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1
 
 -- Count messages in queue
 SELECT COUNT(*) FROM AQ$SYNC_CHANGES_QUEUE_TABLE;
@@ -242,7 +242,7 @@ docker exec syncdemo-oracle sqlplus -s sys/OraclePwd123@localhost:1521/XEPDB1 as
 docker-compose logs api | grep "OracleQueueService"
 
 # Check queue status
-docker exec -it syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1 <<EOF
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1 <<EOF
 SELECT queue_name, enqueue_enabled, dequeue_enabled 
 FROM user_queues 
 WHERE queue_name = 'SYNC_CHANGES_QUEUE';
