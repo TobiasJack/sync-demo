@@ -32,8 +32,14 @@ var oracleConnectionString = builder.Configuration.GetConnectionString("OracleCo
     ?? "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass;";
 builder.Services.AddSingleton<IDbConnectionFactory>(new OracleConnectionFactory(oracleConnectionString));
 
-// Register repository
+// Register repositories
 builder.Services.AddScoped<ISyncItemRepository, SyncItemRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
+builder.Services.AddScoped<IDevicePermissionRepository, DevicePermissionRepository>();
+
+// Register services
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 // Register RabbitMQ service
 var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
