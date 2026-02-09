@@ -80,7 +80,7 @@ sync-demo/
 │
 ├── docker-compose.yml          # Docker Compose Configuration
 ├── Dockerfile                  # API Docker Image
-└── SyncDemo.sln               # Solution File
+└── SyncDemo.slnx              # Solution File
 ```
 
 ## 🚀 Quick Start
@@ -90,7 +90,13 @@ sync-demo/
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) oder [VS Code](https://code.visualstudio.com/)
-- Für MAUI-Entwicklung: MAUI Workload (`dotnet workload install maui`)
+- **Für MAUI-Entwicklung**: 
+  - Windows: MAUI Workload mit Visual Studio 2022
+  - macOS: MAUI Workload und Xcode
+  - Linux: MAUI ist nur für API-Entwicklung verfügbar (kein App-Build)
+  - Workload installieren: `dotnet workload install maui` (nur auf Windows/macOS)
+
+**Hinweis:** Die MAUI App kann nur auf Windows oder macOS gebaut werden. Unter Linux kann nur die API entwickelt und getestet werden.
 
 ### 1. Infrastruktur starten (Oracle & RabbitMQ)
 

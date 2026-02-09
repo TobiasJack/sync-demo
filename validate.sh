@@ -28,14 +28,18 @@ fi
 
 # Build solution
 echo ""
-echo "3. Building solution..."
+echo "3. Building API and Shared projects..."
 cd "$(dirname "$0")"
-if dotnet build SyncDemo.slnx --verbosity quiet; then
-    echo "✓ Solution built successfully"
+if dotnet build src/SyncDemo.Api/SyncDemo.Api.csproj --verbosity quiet && \
+   dotnet build src/SyncDemo.Shared/SyncDemo.Shared.csproj --verbosity quiet; then
+    echo "✓ API and Shared projects built successfully"
 else
-    echo "✗ Solution build failed"
+    echo "✗ Build failed"
     exit 1
 fi
+
+echo ""
+echo "Note: MAUI app build requires platform-specific workloads (Windows/macOS only)"
 
 # Check project structure
 echo ""
