@@ -125,6 +125,13 @@ docker-compose logs -f
 - RabbitMQ Management: http://localhost:15672 (User: `guest`, Password: `guest`)
 - RabbitMQ AMQP: `localhost:5672`
 
+**Test-Benutzer:**
+
+Die Datenbank wird mit drei Test-Benutzern initialisiert:
+- `admin` (Rolle: ADMIN) - Voller Zugriff
+- `user1` (Rolle: USER) - Standard-Benutzerrechte
+- `viewer` (Rolle: VIEWER) - Nur Lesezugriff
+
 ### 2. API starten
 
 ```bash
@@ -335,6 +342,137 @@ docker build -t syncdemo-api .
 - **Oracle Express Edition**: Enterprise-Datenbank
 - **Soft Deletes**: Daten werden markiert, nicht gelöscht
 - **Version Control**: Optimistic Locking mit Version-Feld
+
+## 🔐 Device-spezifische Berechtigungen
+
+Das System unterstützt **granulare Zugriffskontrolle** auf Geräte- und Benutzerebene:
+
+### Rollen
+
+Das System definiert drei Standard-Benutzerrollen:
+
+- **ADMIN**: Voller Zugriff auf alle Daten und Operationen
+- **USER**: Read-Zugriff auf SyncItems (erweiterbar für Customers & Products)
+- **VIEWER**: Nur Read-Zugriff auf ausgewählte Entity-Typen
+
+### Device-Registrierung
+
+Jedes Gerät muss sich vor der Synchronisation beim Server registrieren:
+
+```bash
+POST /api/device/register
+Content-Type: application/json
+
+{
+  "deviceId": "unique-device-id",
+  "deviceName": "My-Desktop",
+  "deviceType": "WPF",
+  "username": "user1"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Device registered successfully",
+  "device": {
+    "deviceId": "unique-device-id",
+    "deviceName": "My-Desktop",
+    "userId": 2,
+    "deviceType": "WPF",
+    "registeredAt": "2024-01-15T10:30:00Z",
+    "lastSeen": "2024-01-15T10:30:00Z",
+    "isActive": true
+  },
+  "permissions": [
+    {
+      "permissionId": 1,
+      "deviceId": "unique-device-id",
+      "entityType": "SYNCITEMS",
+      "entityId": null,
+      "permissionType": "READ",
+      "grantedAt": "2024-01-15T10:30:00Z",
+      "grantedBy": null
+    }
+  ]
+}
+```
+
+### Berechtigungs-System
+
+#### Datenbank-Schema
+
+Das System verwendet vier Haupttabellen für Berechtigungen:
+
+1. **USERS**: Benutzer-Verwaltung mit Rollen
+2. **DEVICES**: Registrierte Geräte
+3. **DEVICE_PERMISSIONS**: Granulare Berechtigungen pro Gerät und Entity
+4. **USER_DATA_SCOPE**: (Optional) User-basierte Daten-Einschränkungen
+
+#### Berechtigungs-Typen
+
+- **READ**: Lesezugriff auf Daten
+- **WRITE**: Schreibzugriff (erstellen/aktualisieren)
+- **DELETE**: Löschzugriff
+- **ALL**: Alle Berechtigungen
+
+#### Entity-Typen
+
+- **SYNCITEMS**: Sync-Items (aktuell implementiert)
+- **CUSTOMERS**: Kundendaten (vorbereitet für Erweiterung)
+- **PRODUCTS**: Produktdaten (vorbereitet für Erweiterung)
+- **ALL**: Alle Entity-Typen
+
+### Client-Verwendung
+
+#### WPF Client
+
+```csharp
+// Bei der Verbindung Username angeben
+await _syncService.ConnectAsync(deviceId, username);
+```
+
+#### MAUI Client
+
+```csharp
+// Device zuerst registrieren
+await _syncService.RegisterDeviceAsync(deviceId, username);
+
+// Dann synchronisieren
+var result = await _syncService.SyncWithServerAsync(deviceId);
+```
+
+### Testing-Szenario
+
+```bash
+# Client 1: Admin User
+Username: admin
+Device ID: admin-device-001
+→ Sieht alle SyncItems mit vollen Rechten
+
+# Client 2: Regular User  
+Username: user1
+Device ID: user-device-001
+→ Sieht alle SyncItems (READ only)
+
+# Client 3: Viewer User
+Username: viewer
+Device ID: viewer-device-001
+→ Sieht nur SyncItems (READ only)
+
+# API: Erstelle neues SyncItem
+→ Update wird an alle berechtigten Devices gesendet
+```
+
+### Erweiterung für Customers & Products
+
+Das System ist vorbereitet für die Erweiterung mit weiteren Entity-Typen wie Customers und Products. Dazu müssen folgende Schritte durchgeführt werden:
+
+1. Neue Repository-Klassen erstellen (z.B. `CustomerRepository`, `ProductRepository`)
+2. Permission-Checks in entsprechenden Controllern implementieren
+3. Standard-Berechtigungen in `DeviceController.GrantDefaultPermissionsAsync()` erweitern
+4. Client-Modelle und Views für neue Entity-Typen hinzufügen
 
 ## 🔒 Sicherheit
 
