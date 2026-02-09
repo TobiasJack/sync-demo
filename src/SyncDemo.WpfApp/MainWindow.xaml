@@ -1,0 +1,78 @@
+<ui:Window x:Class="SyncDemo.WpfApp.MainWindow"
+           xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+           xmlns:ui="http://schemas.modernwpf.com/2019"
+           xmlns:local="clr-namespace:SyncDemo.WpfApp.Views"
+           xmlns:converters="clr-namespace:SyncDemo.WpfApp.Converters"
+           Title="SyncDemo - Desktop Client" 
+           Height="600" 
+           Width="900"
+           ui:WindowHelper.UseModernWindowStyle="True">
+    
+    <ui:Window.Resources>
+        <converters:InvertedBooleanConverter x:Key="InvertedBooleanConverter"/>
+    </ui:Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Connection Panel -->
+        <Border Grid.Row="0" 
+                Background="{DynamicResource SystemControlBackgroundAccentBrush}" 
+                Padding="20">
+            <StackPanel>
+                <TextBlock Text="Synchronisation Client" 
+                           FontSize="24" 
+                           FontWeight="Bold" 
+                           Foreground="White"/>
+                
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Device ID:" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,10,0"
+                               Foreground="White"/>
+                    
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding DeviceId, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding IsConnected, Converter={StaticResource InvertedBooleanConverter}}"
+                             Margin="0,0,10,0"/>
+                    
+                    <Button Grid.Column="2" 
+                            Content="Verbinden" 
+                            Command="{Binding ConnectCommand}"
+                            IsEnabled="{Binding IsConnected, Converter={StaticResource InvertedBooleanConverter}}"
+                            Width="100"
+                            Margin="0,0,10,0"/>
+                    
+                    <Button Grid.Column="3" 
+                            Content="Trennen" 
+                            Command="{Binding DisconnectCommand}"
+                            IsEnabled="{Binding IsConnected}"
+                            Width="100"/>
+                </Grid>
+
+                <TextBlock Text="{Binding StatusText}" 
+                           Margin="0,10,0,0"
+                           Foreground="White"
+                           FontStyle="Italic"/>
+            </StackPanel>
+        </Border>
+
+        <!-- TabControl for Items -->
+        <TabControl Grid.Row="1" Margin="10">
+            <TabItem Header="Sync Items">
+                <local:SyncItemsView DataContext="{Binding SyncItemsViewModel}"/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</ui:Window>

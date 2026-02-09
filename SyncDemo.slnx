@@ -3,5 +3,6 @@
     <Project Path="src/SyncDemo.Api/SyncDemo.Api.csproj" />
     <Project Path="src/SyncDemo.MauiApp/SyncDemo.MauiApp.csproj" />
     <Project Path="src/SyncDemo.Shared/SyncDemo.Shared.csproj" />
+    <Project Path="src/SyncDemo.WpfApp/SyncDemo.WpfApp.csproj" />
   </Folder>
 </Solution>
