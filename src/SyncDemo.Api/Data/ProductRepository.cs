@@ -44,7 +44,7 @@ public class ProductRepository : IProductRepository
             FROM PRODUCTS 
             WHERE ID = :Id";
         
-        return await connection.QueryAsync<Product>(sql, new { Id = id }).FirstOrDefaultAsync();
+        return await connection.QueryFirstOrDefaultAsync<Product>(sql, new { Id = id });
     }
 
     public async Task<int> CreateAsync(Product product)
