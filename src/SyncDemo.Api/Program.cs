@@ -36,8 +36,11 @@ var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
 var rabbitMqPort = int.Parse(builder.Configuration["RabbitMQ:Port"] ?? "5672");
 var rabbitMqUser = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
 var rabbitMqPassword = builder.Configuration["RabbitMQ:Password"] ?? "guest";
-builder.Services.AddSingleton<IMessageQueueService>(
-    new RabbitMqService(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword));
+builder.Services.AddSingleton<IMessageQueueService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<RabbitMqService>>();
+    return new RabbitMqService(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword, logger);
+});
 
 var app = builder.Build();
 
