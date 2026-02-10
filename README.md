@@ -107,6 +107,64 @@ Das System nutzt **Oracle Advanced Queuing (AQ)** für ereignis-gesteuerte Echtz
 ✅ **Enterprise-Grade** - Professionelle Messaging-Lösung von Oracle  
 ✅ **Entkoppelt** - Controller kennen keine Clients, nur Datenbank-Operationen
 
+### Technologie: Native C# Oracle AQ API
+
+Das System nutzt die **native Oracle AQ C# API** aus `Oracle.ManagedDataAccess.Core`:
+
+```csharp
+// Native C# API - Type-Safe & Modern
+var queue = new OracleAQQueue("SYNC_CHANGES_QUEUE", connection);
+queue.MessageType = OracleAQMessageType.Udt;
+queue.UdtTypeName = "SYNCUSER.SYNC_CHANGE_PAYLOAD";
+
+var dequeueOptions = new OracleAQDequeueOptions
+{
+    Wait = 1,
+    DequeueMode = OracleAQDequeueMode.Remove,
+    ConsumerName = "SYNC_SERVICE"
+};
+
+var message = queue.Dequeue(dequeueOptions);
+```
+
+#### Vorteile gegenüber PL/SQL-Strings
+
+| Feature | PL/SQL Strings | Native C# API |
+|---------|----------------|---------------|
+| **Type Safety** | ❌ Runtime | ✅ Compile-Time |
+| **IntelliSense** | ❌ Nein | ✅ Ja |
+| **Debugging** | ❌ Schwierig | ✅ Einfach |
+| **Lesbarkeit** | ❌ String-Concat | ✅ Fluent API |
+| **Refactoring** | ❌ Fehleranfällig | ✅ Tool-Support |
+| **Performance** | ⚠️ Parsing Overhead | ✅ Optimiert |
+
+#### UDT Mapping
+
+Der Oracle User-Defined Type `SYNC_CHANGE_PAYLOAD` wird automatisch auf C# gemapped:
+
+```csharp
+[OracleCustomTypeMapping("SYNCUSER.SYNC_CHANGE_PAYLOAD")]
+public class OracleSyncChangePayload : IOracleCustomType
+{
+    [OracleObjectMapping("CHANGE_ID")]
+    public decimal? ChangeId { get; set; }
+    
+    [OracleObjectMapping("TABLE_NAME")]
+    public string? TableName { get; set; }
+    
+    // ... weitere Properties
+}
+```
+
+#### Performance
+
+- ✅ **Connection Pooling** automatisch
+- ✅ **Async/Await** durchgängig
+- ✅ **Graceful Shutdown** mit CancellationToken
+- ✅ **Retry Logic** bei temporären Fehlern
+- ✅ **Structured Logging** mit Microsoft.Extensions.Logging
+
+
 ### Workflow
 
 1. **Controller** führt INSERT/UPDATE/DELETE auf `CUSTOMERS` oder `PRODUCTS` aus
