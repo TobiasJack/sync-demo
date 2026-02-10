@@ -13,15 +13,14 @@ services:
       - "5500:5500"
     volumes:
       - oracle-data:/opt/oracle/oradata
-      - ./docker/init-scripts/00-grant-aq-permissions.sql:/docker-entrypoint-initdb.d/00-grant-aq-permissions.sql
-      - ./docker/init-scripts/01-create-user.sql:/docker-entrypoint-initdb.d/01-create-user.sql
-      - ./docker/init-scripts/02-init-oracle.sql:/docker-entrypoint-initdb.d/02-init-oracle.sql
-      - ./docker/init-scripts/05-setup-advanced-queuing.sql:/docker-entrypoint-initdb.d/05-setup-advanced-queuing.sql
+      # Mount ganzes Verzeichnis statt einzelner Files
+      - ./docker/init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "sqlplus -s sys/OraclePwd123@localhost:1521/XE as sysdba <<< 'SELECT 1 FROM DUAL;' || exit 0"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 120s  # Gebe Oracle 2 Minuten Zeit zum Starten
 
   # RabbitMQ Message Queue
   rabbitmq:
