@@ -613,6 +613,73 @@ Das System ist vorbereitet für die Erweiterung mit weiteren Entity-Typen wie Cu
 - Input-Validierung verstärken
 - Rate Limiting hinzufügen
 
+## 🐳 Docker Setup
+
+### Infrastruktur starten
+
+```bash
+cd docker
+docker-compose up -d
+```
+
+### Oracle Init Scripts
+
+Alle SQL Scripts im `docker/init-scripts/` Verzeichnis werden **automatisch** beim ersten Container-Start ausgeführt:
+
+```
+docker/init-scripts/
+├── 00-grant-aq-permissions.sql    ← Als SYS (AQ Permissions)
+├── 01-create-user.sql             ← Als SYS (User Creation)
+├── 02-init-oracle.sql             ← Als syncuser (Basis-Tabellen)
+├── 03-insert-testdata.sql         ← Als syncuser (Test-Daten) [falls vorhanden]
+├── 04-create-permissions-tables.sql ← Als syncuser (Permissions) [falls vorhanden]
+└── 05-setup-advanced-queuing.sql  ← Als syncuser (Oracle AQ + CUSTOMERS/PRODUCTS)
+```
+
+**Wichtig:** Scripts werden **alphabetisch** ausgeführt!
+
+### Container neu aufsetzen
+
+Wenn du Änderungen an den Init Scripts machst:
+
+```bash
+# Stoppe Container UND lösche Volumes
+docker-compose down -v
+
+# WICHTIG: -v löscht persistente Daten!
+# Ohne -v werden alte Daten behalten und Scripts NICHT neu ausgeführt
+
+# Starte neu
+docker-compose up -d
+
+# Logs verfolgen
+docker logs -f syncdemo-oracle
+
+# Warte auf: "DATABASE IS READY TO USE!"
+```
+
+### Init Script Logs prüfen
+
+```bash
+# Alle Init Script Logs anzeigen
+docker logs syncdemo-oracle | grep -E "(Script|✅|❌)"
+
+# Erwartete Ausgabe:
+# [Script 00] ✅ AQ Permissions granted to syncuser
+# [Script 01] ✅ Basic privileges granted to syncuser
+# [Script 02] ✅ Tables created
+# [Script 05] ✅ Oracle Advanced Queuing setup completed successfully!
+```
+
+### Verify Setup
+
+```bash
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1 <<EOF
+SELECT table_name FROM user_tables;
+EXIT;
+EOF
+```
+
 ## 🐛 Troubleshooting
 
 ### Oracle AQ Permission Fehler
