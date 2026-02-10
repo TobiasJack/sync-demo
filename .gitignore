@@ -52,3 +52,25 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+#Build folders
+**/bin/**
+**/obj/**
+**/node_modules/**
+**/publish/**
+
+# User Files
+**/*.rsuser
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+**/*.userprefs
+
+# Visual Studio
+**/.vs/
+
+# Build Logs and Temp Files
+**/*.binlog
+**/temp/**
+*.log
