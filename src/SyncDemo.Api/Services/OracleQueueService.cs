@@ -24,7 +24,7 @@ public class OracleQueueService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("OracleQueueService starting - Event-Driven Architecture");
+        _logger.LogInformation("🚀 OracleQueueService starting - Native C# Oracle AQ Client");
 
         using var scope = _serviceProvider.CreateScope();
         
@@ -42,15 +42,16 @@ public class OracleQueueService : BackgroundService
 
         try
         {
+            _logger.LogInformation("✅ Oracle AQ Listener initialized (Native C# API)");
             await _queueListener.StartListeningAsync(stoppingToken);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("OracleQueueService stopped");
+            _logger.LogInformation("⏹️ OracleQueueService stopped");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "OracleQueueService failed");
+            _logger.LogError(ex, "❌ OracleQueueService failed");
         }
     }
 
@@ -58,11 +59,18 @@ public class OracleQueueService : BackgroundService
     {
         try
         {
+            _logger.LogInformation(
+                "📩 Processing change: {TableName} ({Operation}) - Record ID: {RecordId}",
+                message.TableName,
+                message.Operation,
+                message.RecordId
+            );
+            
             await ProcessMessageAsync(message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled error in Oracle AQ message event handler");
+            _logger.LogError(ex, "❌ Error processing Oracle AQ message");
         }
     }
 
