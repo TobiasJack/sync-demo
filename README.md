@@ -631,12 +631,12 @@ docker/init-scripts/
 ├── 00-grant-aq-permissions.sql    ← Als SYS (AQ Permissions)
 ├── 01-create-user.sql             ← Als SYS (User Creation)
 ├── 02-init-oracle.sql             ← Als syncuser (Basis-Tabellen)
-├── 03-insert-testdata.sql         ← Als syncuser (Test-Daten) [falls vorhanden]
-├── 04-create-permissions-tables.sql ← Als syncuser (Permissions) [falls vorhanden]
 └── 05-setup-advanced-queuing.sql  ← Als syncuser (Oracle AQ + CUSTOMERS/PRODUCTS)
 ```
 
 **Wichtig:** Scripts werden **alphabetisch** ausgeführt!
+
+**Hinweis:** Die Nummern 03 und 04 sind für zukünftige Init Scripts reserviert (z.B. Test-Daten, zusätzliche Permissions).
 
 ### Container neu aufsetzen
 
