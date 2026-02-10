@@ -162,7 +162,7 @@ Run all tests using the provided script:
 Connect to Oracle and verify the data:
 
 ```bash
-docker exec -it syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1
 ```
 
 ```sql

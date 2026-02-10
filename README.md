@@ -209,7 +209,7 @@ docker-compose logs -f
 ```
 
 **Services:**
-- Oracle Database: `localhost:1521` (User: `syncuser`, Password: `syncpass`)
+- Oracle Database: `localhost:1521` (User: `syncuser`, Password: `syncpass123`)
 - RabbitMQ Management: http://localhost:15672 (User: `guest`, Password: `guest`)
 - RabbitMQ AMQP: `localhost:5672`
 
@@ -282,7 +282,7 @@ Der WPF Client bietet:
 ```json
 {
   "ConnectionStrings": {
-    "OracleConnection": "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass;"
+    "OracleConnection": "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass123;"
   },
   "RabbitMQ": {
     "Host": "localhost",
@@ -429,7 +429,7 @@ curl http://localhost:5000/api/products
 
 ```bash
 # Mit Oracle verbinden
-docker exec -it syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1
 
 # Tabelle abfragen
 SELECT * FROM SyncItems;
@@ -614,6 +614,72 @@ Das System ist vorbereitet für die Erweiterung mit weiteren Entity-Typen wie Cu
 - Rate Limiting hinzufügen
 
 ## 🐛 Troubleshooting
+
+### Oracle AQ Permission Fehler
+
+**Problem:**
+```
+PLS-00201: ID 'DBMS_AQADM' muss deklariert werden
+```
+
+**Lösung:**
+
+Die Oracle Init Scripts müssen in der richtigen Reihenfolge ausgeführt werden:
+
+```bash
+# 1. Container komplett neu aufsetzen
+cd docker
+docker-compose down -v  # -v löscht Volumes!
+
+# 2. Container neu starten
+docker-compose up -d
+
+# 3. Logs prüfen (dauert 2-3 Minuten)
+docker logs -f syncdemo-oracle
+
+# Erfolgsmeldungen:
+# ✅ AQ Permissions granted to syncuser
+# ✅ SYNC_CHANGE_PAYLOAD type created
+# ✅ Queue Table created
+# ✅ Queue created
+# ✅ Queue started
+```
+
+**Manuelle Verification:**
+
+```bash
+# Als syncuser einloggen
+docker exec -it syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1
+
+-- Prüfe AQ Permissions
+SELECT PRIVILEGE FROM USER_SYS_PRIVS WHERE PRIVILEGE LIKE '%AQ%';
+SELECT GRANTED_ROLE FROM USER_ROLE_PRIVS WHERE GRANTED_ROLE LIKE '%AQ%';
+
+-- Prüfe Queue Setup
+SELECT COUNT(*) FROM USER_QUEUE_TABLES;  -- Sollte 1 sein
+SELECT COUNT(*) FROM USER_QUEUES;        -- Sollte 1 sein
+SELECT COUNT(*) FROM USER_TYPES WHERE TYPE_NAME = 'SYNC_CHANGE_PAYLOAD';  -- Sollte 1 sein
+
+EXIT;
+```
+
+**Falls Init Scripts fehlschlagen:**
+
+Führe manuell als SYSTEM User aus:
+
+```bash
+docker exec -it syncdemo-oracle sqlplus system/OraclePwd123@XEPDB1
+
+GRANT EXECUTE ON DBMS_AQADM TO syncuser;
+GRANT EXECUTE ON DBMS_AQ TO syncuser;
+GRANT AQ_ADMINISTRATOR_ROLE TO syncuser;
+GRANT AQ_USER_ROLE TO syncuser;
+GRANT CREATE TYPE TO syncuser;
+COMMIT;
+EXIT;
+```
+
+Dann führe `05-setup-advanced-queuing.sql` erneut aus.
 
 ### Oracle Container startet nicht
 ```bash

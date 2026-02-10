@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
 
 // Register Oracle connection factory
 var oracleConnectionString = builder.Configuration.GetConnectionString("OracleConnection") 
-    ?? "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass;";
+    ?? "Data Source=localhost:1521/XEPDB1;User Id=syncuser;Password=syncpass123;";
 builder.Services.AddSingleton<IDbConnectionFactory>(new OracleConnectionFactory(oracleConnectionString));
 
 // Register repositories

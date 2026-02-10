@@ -13,8 +13,10 @@ services:
       - "5500:5500"
     volumes:
       - oracle-data:/opt/oracle/oradata
-      - ./scripts/init-oracle.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./scripts/05-setup-advanced-queuing.sql:/docker-entrypoint-initdb.d/05-setup-advanced-queuing.sql
+      - ./docker/init-scripts/00-grant-aq-permissions.sql:/docker-entrypoint-initdb.d/00-grant-aq-permissions.sql
+      - ./docker/init-scripts/01-create-user.sql:/docker-entrypoint-initdb.d/01-create-user.sql
+      - ./docker/init-scripts/02-init-oracle.sql:/docker-entrypoint-initdb.d/02-init-oracle.sql
+      - ./docker/init-scripts/05-setup-advanced-queuing.sql:/docker-entrypoint-initdb.d/05-setup-advanced-queuing.sql
     healthcheck:
       test: ["CMD-SHELL", "sqlplus -s sys/OraclePwd123@localhost:1521/XE as sysdba <<< 'SELECT 1 FROM DUAL;' || exit 0"]
       interval: 30s
@@ -48,7 +50,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__OracleConnection=Data Source=oracle:1521/XEPDB1;User Id=syncuser;Password=syncpass;
+      - ConnectionStrings__OracleConnection=Data Source=oracle:1521/XEPDB1;User Id=syncuser;Password=syncpass123;
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
       - RabbitMQ__UserName=guest

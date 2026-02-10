@@ -215,7 +215,7 @@ volumes:
 
 2. **Run Oracle AQ setup script**
    ```bash
-   docker exec -i syncdemo-oracle sqlplus syncuser/syncpass@XEPDB1 < scripts/05-setup-advanced-queuing.sql
+   docker exec -i syncdemo-oracle sqlplus syncuser/syncpass123@XEPDB1 < scripts/05-setup-advanced-queuing.sql
    ```
 
 3. **Deploy new API code**
