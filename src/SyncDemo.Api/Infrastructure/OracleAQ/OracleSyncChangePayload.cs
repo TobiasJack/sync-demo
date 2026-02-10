@@ -4,8 +4,8 @@ using Oracle.ManagedDataAccess.Types;
 namespace SyncDemo.Api.Infrastructure.OracleAQ;
 
 /// <summary>
-/// Factory class für Oracle UDT SYNC_CHANGE_PAYLOAD
-/// Mapped zwischen Oracle UDT und C# OracleQueueMessage
+/// Factory class for Oracle UDT SYNC_CHANGE_PAYLOAD
+/// Maps between Oracle UDT and C# OracleQueueMessage
 /// </summary>
 public class OracleSyncChangePayloadFactory : IOracleCustomTypeFactory
 {
@@ -16,7 +16,7 @@ public class OracleSyncChangePayloadFactory : IOracleCustomTypeFactory
 }
 
 /// <summary>
-/// Oracle UDT Representation von SYNC_CHANGE_PAYLOAD
+/// Oracle UDT representation of SYNC_CHANGE_PAYLOAD
 /// </summary>
 [OracleCustomTypeMapping("SYNCUSER.SYNC_CHANGE_PAYLOAD")]
 public class OracleSyncChangePayload : IOracleCustomType, INullable
@@ -77,7 +77,7 @@ public class OracleSyncChangePayload : IOracleCustomType, INullable
     }
 
     /// <summary>
-    /// Konvertiert zu OracleQueueMessage
+    /// Converts to OracleQueueMessage
     /// </summary>
     public OracleQueueMessage ToQueueMessage()
     {

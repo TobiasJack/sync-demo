@@ -6,7 +6,7 @@ using System.Data;
 namespace SyncDemo.Api.Infrastructure.OracleAQ;
 
 /// <summary>
-/// Modernisierter Oracle AQ Listener mit nativer C# API
+/// Modernized Oracle AQ Listener with native C# API
 /// </summary>
 public class OracleQueueListener : IOracleQueueListener, IDisposable
 {
@@ -32,12 +32,12 @@ public class OracleQueueListener : IOracleQueueListener, IDisposable
 
         try
         {
-            // Initialisiere Connection
+            // Initialize Connection
             await InitializeConnectionAsync(cancellationToken);
 
             _logger.LogInformation("Oracle AQ Listener started (Native C# API)");
 
-            // Haupt-Loop
+            // Main loop
             while (_isListening && !cancellationToken.IsCancellationRequested)
             {
                 try
@@ -58,7 +58,7 @@ public class OracleQueueListener : IOracleQueueListener, IDisposable
                     }
                     else
                     {
-                        // Keine Nachricht, kurz warten
+                        // No message, wait briefly
                         await Task.Delay(100, cancellationToken);
                     }
                 }
@@ -91,7 +91,7 @@ public class OracleQueueListener : IOracleQueueListener, IDisposable
         _connection = new OracleConnection(_connectionString);
         await _connection.OpenAsync(cancellationToken);
 
-        // Initialisiere Queue mit nativer API
+        // Initialize Queue with native API
         _queue = new OracleAQQueue("SYNC_CHANGES_QUEUE", _connection);
         _queue.MessageType = OracleAQMessageType.Udt;
         _queue.UdtTypeName = "SYNCUSER.SYNC_CHANGE_PAYLOAD";
@@ -106,17 +106,17 @@ public class OracleQueueListener : IOracleQueueListener, IDisposable
             await InitializeConnectionAsync(cancellationToken);
         }
 
-        // Dequeue Options konfigurieren
+        // Configure Dequeue Options
         var dequeueOptions = new OracleAQDequeueOptions
         {
-            Wait = 1, // 1 Sekunde warten
+            Wait = 1, // Wait 1 second
             DequeueMode = OracleAQDequeueMode.Remove,
             ConsumerName = "SYNC_SERVICE" // Subscriber Name
         };
 
         try
         {
-            // Native Dequeue mit C# API
+            // Native Dequeue with C# API
             var aqMessage = _queue!.Dequeue(dequeueOptions) as OracleAQMessage;
 
             if (aqMessage?.Payload == null)
@@ -124,7 +124,7 @@ public class OracleQueueListener : IOracleQueueListener, IDisposable
                 return null;
             }
 
-            // Extrahiere Payload (Oracle UDT)
+            // Extract Payload (Oracle UDT)
             var udtPayload = aqMessage.Payload as OracleSyncChangePayload;
 
             if (udtPayload == null)
@@ -133,17 +133,13 @@ public class OracleQueueListener : IOracleQueueListener, IDisposable
                 return null;
             }
 
-            // Commit Transaction (wichtig für Visibility.OnCommit)
-            using var transaction = _connection!.BeginTransaction();
-            transaction.Commit();
-
-            // Konvertiere zu OracleQueueMessage
+            // Convert to OracleQueueMessage
             return udtPayload.ToQueueMessage();
         }
         catch (OracleException ex) when (ex.Number == 25228)
         {
             // ORA-25228: timeout or end-of-fetch
-            // Keine Message verfügbar - kein Error
+            // No message available - not an error
             return null;
         }
         catch (Exception ex)
